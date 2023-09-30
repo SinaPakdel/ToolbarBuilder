@@ -1,0 +1,96 @@
+class ChatFragment : BaseFragment() {
+    private val TAG = "ChatFragment"
+    private lateinit var binding: FragmentChatBinding
+    private lateinit var chatAdapter: ChatAdapter
+    private lateinit var menuHost: MenuHost
+    private lateinit var searchView: SearchView
+
+    @Inject
+    lateinit var viewModel: ChatVm
+
+    override fun onAttach(context: Context) {
+        super.onAttach(context)
+        baseActivityComponent.inject(this)
+    }
+
+    override fun onCreateView(
+        inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
+    ): View {
+        binding = DataBindingUtil.inflate(inflater, R.layout.fragment_chat, container, false)
+        menuHost = requireActivity()
+
+
+        val menuProvider = object : MenuProvider {
+            override fun onCreateMenu(menu: Menu, menuInflater: MenuInflater) {
+                menuInflater.inflate(R.menu.menu_chat_list, menu)
+                val searchItem = menu.findItem(R.id.action_search)
+                searchView = searchItem.actionView as SearchView
+                searchView.apply {
+                    ContextCompat.getColor(binding.root.context, R.color.white).also {color->
+                        applyStyling(color, color, color)
+                    }
+                    onQueryTextChanged {
+                        Log.e(TAG, "onCreateMenu: $it")
+                    }
+                }
+            }
+
+            override fun onMenuItemSelected(menuItem: MenuItem): Boolean {
+                return when (menuItem.itemId) {
+                    R.id.action_all,
+                    R.id.action_private,
+                    R.id.action_group,
+                    R.id.action_channel,
+                    R.id.action_archive -> {
+                        viewModel.getListOfChat(menuItem.title)
+                        true
+                    }
+
+                    else -> false
+                }
+            }
+
+        }
+        menuHost.addMenuProvider(menuProvider, viewLifecycleOwner, Lifecycle.State.RESUMED)
+        ToolbarBuilder(binding.root.context)
+            .withToolbar(binding.toolbar)
+            .withMenu(R.menu.menu_chat_list)
+            .withMenuProvider(menuProvider)
+            .setToolbarTitle(getString(R.string.all))
+            .setNavigationIcon(R.drawable.left_arrow)
+            .setTitleTextColor(ContextCompat.getColor(binding.root.context, R.color.white))
+            .build(this)
+
+        observers()
+
+        chatAdapter = ChatAdapter(
+            viewModel.createSharePrefAdapterUsage(),
+            viewModel.getSharedPrefAdapterTime()
+        ) { data, shared ->
+
+        }
+        implementAdapter()
+
+        return binding.root
+    }
+
+
+
+    private fun implementAdapter() {
+        with(binding) {
+            rvChat.apply {
+                adapter = chatAdapter
+                layoutManager = LinearLayoutManager(root.context)
+            }
+        }
+    }
+
+    private fun observers() {
+        launchWhenStarted {
+            viewModel.chatList.collect {
+                Log.e(TAG, "observers: $it")
+                chatAdapter.submitList(it)
+            }
+        }
+    }
+}
