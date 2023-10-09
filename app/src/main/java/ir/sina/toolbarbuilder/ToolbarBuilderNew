@@ -1,0 +1,71 @@
+class ToolbarBuilder(private val context: Context) {
+    private var toolbar: Toolbar? = null
+    private var menuResId: Int = 0
+    private var toolbarTitle: String? = null
+    private var drawableIcon: Int = 0
+    private var textColor: Int = 0
+    private var menuProvider: MenuProvider? = null
+    private var menuHost: MenuHost? = null
+
+    fun withToolbar(toolbar: Toolbar): ToolbarBuilder {
+        this.toolbar = toolbar
+        return this
+    }
+
+    fun withMenu(menuResId: Int): ToolbarBuilder {
+        this.menuResId = menuResId
+        return this
+    }
+
+    fun withMenuProvider(menuProvider: MenuProvider): ToolbarBuilder {
+        this.menuProvider = menuProvider
+        return this
+    }
+
+    fun withMenuHost(menuHost: MenuHost): ToolbarBuilder {
+        this.menuHost = menuHost
+        return this
+    }
+
+    fun setNavigationIcon(@DrawableRes drawableIcon: Int): ToolbarBuilder {
+        this.drawableIcon = drawableIcon
+        return this
+    }
+
+    fun setTitleTextColor(@ColorInt textColor: Int): ToolbarBuilder {
+        this.textColor = textColor
+        return this
+    }
+
+    fun setToolbarTitle(toolbarTitle: String): ToolbarBuilder {
+        this.toolbarTitle = toolbarTitle
+        return this
+    }
+
+    fun build(fragment: Fragment) {
+        val activity = fragment.requireActivity() as AppCompatActivity
+        toolbar?.let { toolbar ->
+            toolbar.apply {
+                inflateMenu(menuResId)
+                setOnMenuItemClickListener { item ->
+                    menuProvider?.onMenuItemSelected(item) ?: false
+                }
+                setNavigationIcon(drawableIcon)
+                setTitleTextColor(textColor)
+                setNavigationOnClickListener {
+                    fragment.findNavController().navigateUp()
+                }
+            }
+            activity.apply {
+                setSupportActionBar(toolbar)
+                supportActionBar?.apply {
+                    this.title = toolbarTitle
+                    setDisplayHomeAsUpEnabled(true)
+                    setDisplayShowHomeEnabled(true)
+                    setHomeAsUpIndicator(drawableIcon)
+                }
+            }
+            menuProvider?.onCreateMenu(toolbar.menu, MenuInflater(context))
+        }
+    }
+}
