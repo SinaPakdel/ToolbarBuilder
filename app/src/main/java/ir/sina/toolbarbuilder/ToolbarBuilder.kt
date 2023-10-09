@@ -1,46 +1,59 @@
 package ir.sina.toolbarbuilder
 
 import android.content.Context
+import android.view.Menu
 import android.view.MenuInflater
 import android.view.MenuItem
+import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
-import androidx.core.view.MenuHost
-import androidx.core.view.MenuProvider
+import androidx.fragment.app.Fragment
+
 
 class ToolbarBuilder(private val context: Context) {
-    private var toolbar: Toolbar? = null
-    private var menuResId: Int = 0
     private var menuProvider: MenuProvider? = null
-    private var menuHost: MenuHost? = null
+    private var toolbar: Toolbar? = null
+    private var drawableIcon: Int = 0
+    private var toolbarTitle: String? = null
 
-    fun withToolbar(toolbar: Toolbar): ToolbarBuilder {
+    fun setToolbar(toolbar: Toolbar): ToolbarBuilder {
         this.toolbar = toolbar
         return this
     }
 
-    fun withMenu(menuResId: Int): ToolbarBuilder {
-        this.menuResId = menuResId
+    fun setMenuProvider(provider: MenuProvider): ToolbarBuilder {
+        menuProvider = provider
         return this
     }
 
-    fun withMenuProvider(menuProvider: MenuProvider): ToolbarBuilder {
-        this.menuProvider = menuProvider
+    fun setNavigationIcon(drawableIcon: Int): ToolbarBuilder {
+        this.drawableIcon = drawableIcon
         return this
     }
 
-    fun withMenuHost(menuHost: MenuHost): ToolbarBuilder {
-        this.menuHost = menuHost
+    fun setToolbarTitle(toolbarTitle: String): ToolbarBuilder {
+        this.toolbarTitle = toolbarTitle
         return this
     }
 
-    fun build() {
-        toolbar?.let { toolbar ->
-            toolbar.inflateMenu(menuResId)
-            toolbar.setOnMenuItemClickListener { item ->
-                menuProvider?.onMenuItemSelected(item) ?: false
+    fun build(fragment: Fragment): Toolbar {
+        val appCompatActivity = fragment.requireActivity() as AppCompatActivity
+        toolbar?.let {
+            appCompatActivity.setSupportActionBar(toolbar)
+            appCompatActivity.supportActionBar?.apply {
+                title = toolbarTitle
+                setDisplayHomeAsUpEnabled(true)
+                setHomeAsUpIndicator(drawableIcon)
             }
-            val menuInflater = MenuInflater(context)
-            menuProvider?.onCreateMenu(toolbar.menu, menuInflater)
         }
+        toolbar?.menu?.let { menu ->
+            menu.clear()
+            menuProvider?.onCreateMenu(menu, MenuInflater(appCompatActivity))
+        }
+        return toolbar!!
     }
+}
+
+interface MenuProvider {
+    fun onCreateMenu(menu: Menu, menuInflater: MenuInflater)
+    fun onMenuItemSelected(menuItem: MenuItem): Boolean
 }
