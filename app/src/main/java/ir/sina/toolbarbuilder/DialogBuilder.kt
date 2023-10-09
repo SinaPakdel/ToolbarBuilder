@@ -15,25 +15,25 @@ import android.widget.GridView
 import android.widget.ImageView
 import android.widget.TextView
 
-class DialogBuilder(context: Context) {
+class DialogBuilder(private val context: Context) {
     companion object {
         private const val DEFAULT_NUM_COLUMNS = 3
     }
 
     private val dialog: Dialog = Dialog(context)
-    private var icons: List<Pair<String, Int>> = emptyList()
-    private var itemClickListener: ((position: Int) -> Unit)? = null
+    private var icons: List<IconItem> = emptyList()
+    private var itemClickListener: ((iconItem: IconItem) -> Unit)? = null
 
     private var iconSize: Int = 0
     private var gravity: Int = Gravity.CENTER
 
-    fun setIcons(icons: List<Pair<String, Int>>, iconSize: Int = 0): DialogBuilder {
+    fun setIcons(icons: List<IconItem>, iconSize: Int = 0): DialogBuilder {
         this.icons = icons
         this.iconSize = iconSize
         return this
     }
 
-    fun setOnItemClickListener(listener: (position: Int) -> Unit): DialogBuilder {
+    fun setOnItemClickListener(listener: (iconItem: IconItem) -> Unit): DialogBuilder {
         this.itemClickListener = listener
         return this
     }
@@ -52,12 +52,14 @@ class DialogBuilder(context: Context) {
             ViewGroup.LayoutParams.WRAP_CONTENT
         )
         dialog.window?.setGravity(gravity)
+        dialog.window?.attributes?.windowAnimations = R.style.DialogAnimation
 
         val gridView = dialog.findViewById<GridView>(R.id.iconGridView)
         gridView.numColumns = calculateNumColumns()
         gridView.adapter = IconAdapter(dialog.context, icons)
         gridView.setOnItemClickListener { _, _, position, _ ->
-            itemClickListener?.invoke(position)
+            val iconItem = icons[position]
+            itemClickListener?.invoke(iconItem)
             dialog.dismiss()
         }
 
@@ -73,16 +75,16 @@ class DialogBuilder(context: Context) {
         }
     }
 
-    private class IconAdapter(
+    private inner class IconAdapter(
         private val context: Context,
-        private val icons: List<Pair<String, Int>>
+        private val icons: List<IconItem>
     ) : BaseAdapter() {
 
         override fun getCount(): Int {
             return icons.size
         }
 
-        override fun getItem(position: Int): Pair<String, Int> {
+        override fun getItem(position: Int): IconItem {
             return icons[position]
         }
 
@@ -103,14 +105,14 @@ class DialogBuilder(context: Context) {
                 holder = view.tag as ViewHolder
             }
 
-            val icon = getItem(position)
-            holder.nameTextView.text = icon.first
-            holder.iconImageView.setImageResource(icon.second)
+            val icon = icons[position]
+            holder.nameTextView.text = icon.itemName
+            holder.iconImageView.setImageResource(icon.itemId)
 
             return view
         }
 
-        private class ViewHolder(view: View) {
+        private inner class ViewHolder(view: View) {
             val iconImageView: ImageView = view.findViewById(R.id.iconImageView)
             val nameTextView: TextView = view.findViewById(R.id.nameTextView)
         }

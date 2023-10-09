@@ -1,7 +1,6 @@
 package ir.sina.toolbarbuilder
 
 import android.os.Bundle
-import android.util.Log
 import android.view.Gravity
 import android.view.View
 import android.widget.Toast
@@ -21,20 +20,17 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         binding = FragmentHomeBinding.bind(view)
 
         binding.button.setOnClickListener {
-             DialogBuilder(requireContext())
+            DialogBuilder(requireContext())
                 .setIcons(
                     listOf(
-                        Pair("آیکن ۱", R.drawable.ic_arrow_back),
-                        Pair("آیکن ۲", R.drawable.ic_search),
-                        Pair("آیکن ۳", R.drawable.ic_sort),
-                        Pair("آیکن ۳", R.drawable.ic_sort),
-                        Pair("آیکن ۳", R.drawable.ic_sort),
-                        // ...
+                        IconItem.ICON_1,
+                        IconItem.ICON_2,
+                        IconItem.ICON_3,
                     )
                 )
-                .setOnItemClickListener { position ->
-                    when (position) {
-                        0 -> {
+                .setOnItemClickListener {
+                    when (it) {
+                        IconItem.ICON_1 -> {
                             Toast.makeText(
                                 requireContext(),
                                 "Icon 1 clicked",
@@ -42,8 +38,7 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
                             ).show()
                         }
 
-                        1 -> {
-                            Log.e("TAG", "onViewCreated: sort")
+                        IconItem.ICON_2 -> {
                             Toast.makeText(
                                 requireContext(),
                                 "Icon 2 clicked",
@@ -51,8 +46,7 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
                             ).show()
                         }
 
-                        2 -> {
-                            Log.e("TAG", "onViewCreated: search")
+                        IconItem.ICON_3 -> {
                             Toast.makeText(
                                 requireContext(),
                                 "Icon 3 clicked",
