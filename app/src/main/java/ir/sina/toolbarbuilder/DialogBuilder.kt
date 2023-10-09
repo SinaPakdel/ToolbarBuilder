@@ -1,61 +1,88 @@
+package ir.sina.toolbarbuilder
+
 import android.app.Dialog
 import android.content.Context
+import android.content.res.Resources
+import android.graphics.Color
+import android.graphics.drawable.ColorDrawable
+import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.Window
 import android.widget.BaseAdapter
 import android.widget.GridView
 import android.widget.ImageView
-import android.widget.LinearLayout
 import android.widget.TextView
-import ir.sina.toolbarbuilder.R
 
 class DialogBuilder(context: Context) {
-    private val dialog: Dialog = Dialog(context)
-    private var icons: List<Pair<String, Int>> = listOf()
-    private var itemClickListener: ((Int) -> Unit)? = null
+    companion object {
+        private const val DEFAULT_NUM_COLUMNS = 3
+    }
 
-    fun setIcons(icons: List<Pair<String, Int>>): DialogBuilder {
+    private val dialog: Dialog = Dialog(context)
+    private var icons: List<Pair<String, Int>> = emptyList()
+    private var itemClickListener: ((position: Int) -> Unit)? = null
+
+    private var iconSize: Int = 0
+    private var gravity: Int = Gravity.CENTER
+
+    fun setIcons(icons: List<Pair<String, Int>>, iconSize: Int = 0): DialogBuilder {
         this.icons = icons
+        this.iconSize = iconSize
         return this
     }
 
-    fun setOnItemClickListener(listener: (Int) -> Unit): DialogBuilder {
-        itemClickListener = listener
+    fun setOnItemClickListener(listener: (position: Int) -> Unit): DialogBuilder {
+        this.itemClickListener = listener
+        return this
+    }
+
+    fun setGravity(gravity: Int): DialogBuilder {
+        this.gravity = gravity
         return this
     }
 
     fun build(): Dialog {
-        val layout = LinearLayout(dialog.context)
-        layout.layoutParams = ViewGroup.LayoutParams(
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE)
+        dialog.setContentView(R.layout.dialog_icon_picker)
+        dialog.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+        dialog.window?.setLayout(
             ViewGroup.LayoutParams.MATCH_PARENT,
             ViewGroup.LayoutParams.WRAP_CONTENT
         )
-        layout.orientation = LinearLayout.VERTICAL
+        dialog.window?.setGravity(gravity)
 
-        val gridView = GridView(dialog.context)
-        gridView.numColumns = 4
+        val gridView = dialog.findViewById<GridView>(R.id.iconGridView)
+        gridView.numColumns = calculateNumColumns()
         gridView.adapter = IconAdapter(dialog.context, icons)
         gridView.setOnItemClickListener { _, _, position, _ ->
             itemClickListener?.invoke(position)
             dialog.dismiss()
         }
 
-        layout.addView(gridView)
-
-        dialog.setContentView(layout)
         return dialog
     }
 
-    private inner class IconAdapter(
+    private fun calculateNumColumns(): Int {
+        return if (iconSize > 0) {
+            val screenWidth = Resources.getSystem().displayMetrics.widthPixels
+            screenWidth / iconSize
+        } else {
+            DEFAULT_NUM_COLUMNS
+        }
+    }
+
+    private class IconAdapter(
         private val context: Context,
         private val icons: List<Pair<String, Int>>
     ) : BaseAdapter() {
+
         override fun getCount(): Int {
             return icons.size
         }
 
-        override fun getItem(position: Int): Any {
+        override fun getItem(position: Int): Pair<String, Int> {
             return icons[position]
         }
 
@@ -63,27 +90,27 @@ class DialogBuilder(context: Context) {
             return position.toLong()
         }
 
-        override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
+        override fun getView(position: Int, convertView: View?, parent: ViewGroup?): View {
             val view: View
-            val viewHolder: ViewHolder
+            val holder: ViewHolder
 
             if (convertView == null) {
                 view = LayoutInflater.from(context).inflate(R.layout.icon_item, parent, false)
-                viewHolder = ViewHolder(view)
-                view.tag = viewHolder
+                holder = ViewHolder(view)
+                view.tag = holder
             } else {
                 view = convertView
-                viewHolder = view.tag as ViewHolder
+                holder = view.tag as ViewHolder
             }
 
-            val (name, iconResId) = icons[position]
-            viewHolder.iconImageView.setImageResource(iconResId)
-            viewHolder.nameTextView.text = name
+            val icon = getItem(position)
+            holder.nameTextView.text = icon.first
+            holder.iconImageView.setImageResource(icon.second)
 
             return view
         }
 
-        private inner class ViewHolder(view: View) {
+        private class ViewHolder(view: View) {
             val iconImageView: ImageView = view.findViewById(R.id.iconImageView)
             val nameTextView: TextView = view.findViewById(R.id.nameTextView)
         }
